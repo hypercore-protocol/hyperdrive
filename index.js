@@ -1210,6 +1210,34 @@ class Hyperdrive extends Nanoresource {
     })
   }
 
+  rename (oldpath, newpath, cb) {
+    this.lstat(oldpath, (err, oldstat) => {
+      if (err) return cb(err)
+      //TODO: Handle the following case : the new directory pathname contains a path prefix that names the old directory, should result in EINVAL
+      if (oldstat.isDirectory()) return cb(new errors.IsDirectory(oldpath)) //TODO: Support directory renaming
+      if (oldstat.linkName) return cb(new InvalidArgument(`${oldpath} not implemented yet`)) //TODO: Support symlink renaming
+      
+      this.exists(newpath, exists => {
+        if (exists) {
+          this.lstat(newpath, (err, newstat) => {
+            if (err) return cb(err)
+            if (!oldstat.isDirectory() && newstat.isDirectory()) return cb(new errors.IsDirectory(newpath))
+            if (oldstat.isDirectory() && !newstat.isDirectory()) return cb(new errors.IsNotDirectory(oldpath))
+            this.unlink(newpath, err => {
+              if (err) return cb(err)
+              this.rename(oldpath, newpath, cb)
+            })
+          })
+        } else {
+          this.copy(oldpath, newpath, err => {
+            if (err) return cb(err)
+            this.unlink(oldpath, cb)
+          })
+        }
+      })
+    })
+  }
+
   // Tag-related methods.
 
   createTag (name, version, cb) {
