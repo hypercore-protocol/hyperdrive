@@ -175,14 +175,13 @@ module.exports = class HyperdrivePromises {
     })
   }
 
-  rmdir (name) {
+  rmdir (name, opts) {
     return new Promise((resolve, reject) => {
-      this.drive.rmdir(name, err => {
+      this.drive.rmdir(name, opts, err => {
         if (err) return reject(err)
         return resolve(null)
       })
     })
-
   }
 
   checkout (version, opts) {

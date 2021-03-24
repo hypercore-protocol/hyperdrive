@@ -809,17 +809,34 @@ class Hyperdrive extends Nanoresource {
     this._del(name, cb || noop)
   }
 
-  rmdir (name, cb) {
+  rmdir (name, opts, cb) {
+    if (typeof opts === 'function') cb = opts
     if (!cb) cb = noop
-    name = fixName(name)
-    const self = this
 
-    const ite = readdirIterator(this, name)
-    ite.next((err, val) => {
+    name = fixName(name)
+
+    const recursive = !!(opts && opts.recursive)
+    const ite = readdirIterator(this, name, opts)
+
+    const onItem = (err, val) => {
       if (err) return cb(err)
-      if (val) return cb(new errors.DirectoryNotEmpty(name))
-      self._del(name, cb)
-    })
+      let key = name
+
+      if (recursive) {
+        if (val === null) return cb(null)
+        key = path.join(name, val)
+      } else if (val) {
+        return cb(new errors.DirectoryNotEmpty(name))
+      }
+
+      this._del(key, err => {
+        if (err) return cb(err)
+        if (!recursive) return cb(null)
+        ite.next(onItem)
+      })
+    }
+
+    ite.next(onItem)
   }
 
   replicate (isInitiator, opts) {
