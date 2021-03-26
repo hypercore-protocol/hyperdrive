@@ -396,7 +396,11 @@ class Hyperdrive extends Nanoresource {
 
     this.ready(err => {
       if (err) return stream.destroy(err)
-      return this.stat(name, { file: true }, (err, st, trie) => {
+
+      const passedOpts = { file: true }
+      if (opts.db) passedOpts.db = opts.db
+
+      return this.stat(name, passedOpts, (err, st, trie) => {
         if (err) return stream.destroy(err)
         if (st.mount && st.mount.hypercore) {
           const feed = self.corestore.get({
@@ -492,7 +496,11 @@ class Hyperdrive extends Nanoresource {
 
     this.ready(err => {
       if (err) return proxy.destroy(err)
-      this.stat(name, { trie: true }, (err, stat, trie) => {
+      
+      const passedOpts = { trie: true }
+      if (opts.db) passedOpts.db = opts.db
+
+      this.stat(name, passedOpts, (err, stat, trie) => {
         if (err && (err.errno !== 2)) return proxy.destroy(err)
         this._getContent(trie.feed, (err, contentState) => {
           if (err) return proxy.destroy(err)
@@ -531,7 +539,7 @@ class Hyperdrive extends Nanoresource {
           blocks: contentState.feed.length - offset
         })
         proxy.cork()
-        self._putStat(name, stat, function (err) {
+        self._putStat(name, stat, dbOpts(opts), function (err) {
           if (err) return proxy.destroy(err)
           self.emit('append', name, opts)
           proxy.uncork()
@@ -557,7 +565,7 @@ class Hyperdrive extends Nanoresource {
         if (err && err.errno !== 2) return cb(err)
         if (stat) return cb(null, stat)
         const st = Stat.file(opts)
-        return this._putStat(name, st, cb)
+        return this._putStat(name, st, dbOpts(opts), cb)
       })
     })
   }
@@ -639,7 +647,7 @@ class Hyperdrive extends Nanoresource {
 
     this.ready(err => {
       if (err) return cb(err)
-      this.db.get(name, (err, node, trie) => {
+      this.db.get(name, dbOpts(opts), (err, node, trie) => {
         if (err) return cb(err)
         if (node && !shouldForce) return cb(new errors.PathAlreadyExists(name))
         onexisting(node, trie)
@@ -673,9 +681,9 @@ class Hyperdrive extends Nanoresource {
 
     this._createStat(name, opts, (err, st) => {
       if (err) return cb(err)
-      this._putStat(name, st, {
+      this._putStat(name, st, dbOpts(opts, {
         condition: ifNotExists
-      }, cb)
+      }), cb)
     })
   }
 
@@ -713,7 +721,7 @@ class Hyperdrive extends Nanoresource {
 
     this.ready(err => {
       if (err) return cb(err)
-      this.db.get(name, opts, onstat)
+      this.db.get(name, dbOpts(opts, opts), onstat)
     })
 
     function onstat (err, node, trie, mount, mountPath) {
@@ -1295,3 +1303,10 @@ function fixName (name) {
 }
 
 function noop () {}
+
+function dbOpts (opts, extend = {}) {
+  if (!opts || !opts.db) return extend
+  opts = Object.assign(opts.db, extend)
+  if (opts.db) delete opts.db
+  return opts
+}

@@ -30,7 +30,7 @@
     "hypercore-byte-stream": "^1.0.2",
     "hypercore-protocol": "^8.0.0",
     "hyperdrive-schemas": "^2.0.0",
-    "mountable-hypertrie": "^2.6.0",
+    "mountable-hypertrie": "git+https://github.com/fsteff/mountable-hypertrie.git",
     "mutexify": "^1.2.0",
     "nanoiterator": "^1.2.0",
     "nanoresource": "^1.3.0",
