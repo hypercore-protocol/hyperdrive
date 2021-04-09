@@ -121,6 +121,43 @@ test('directory download', t => {
   }
 })
 
+test('test with no path as arg', t => {
+  const r = new Replicator(t)
+  const drive1 = create()
+  var drive2 = null
+
+  drive1.ready(err => {
+    t.error(err, 'no error')
+    drive2 = create(drive1.key)
+    drive2.ready(err => {
+      t.error(err, 'no error')
+      r.replicate(drive1, drive2)
+      onready()
+    })
+  })
+
+  function onready () {
+    drive1.writeFile('a/1', '1', err => {
+      t.error(err, 'no error')
+      drive1.writeFile('a/2', '2',err => {
+        t.error(err, 'no error')
+        drive1.writeFile('a/3', '3', err => {
+          t.error(err, 'no error')
+          drive2.download('', { maxConcurrent: 1 }, err => {
+            drive2.stats('', (err, totals) => {
+              t.error(err, 'no error')
+              t.same(totals.get('/a/1').downloadedBlocks, 1)
+              t.same(totals.get('/a/2').downloadedBlocks, 1)
+              t.same(totals.get('/a/3').downloadedBlocks, 1)
+              r.end()
+            })
+          })
+        })
+      })
+    })
+  }
+})
+
 test('download cancellation', t => {
   const r = new Replicator(t)
   const drive1 = create()
