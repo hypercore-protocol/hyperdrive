@@ -54,6 +54,7 @@ class Hyperdrive extends Nanoresource {
     this.sparse = opts.sparse !== false
     this.sparseMetadata = opts.sparseMetadata !== false
     this.subtype = opts.subtype || 'hyperdrive'
+    this.contentOpts = opts.contentOpts || {}
 
     this.promises = new HyperdrivePromises(this)
 
